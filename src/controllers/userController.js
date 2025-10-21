@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const Photo = require("../models/Photo");
 const dotenv = require("dotenv");
-dotenv.config()
+dotenv.config();
 
 // Get current user profile
 const getMe = async (req, res) => {
@@ -22,7 +22,7 @@ const getAllUsers = async (req, res) => {
   });
 };
 
-const uploadPhoto = async (req, res, next) => {
+const uploadPhoto = async (req, res) => {
   try {
     const { title, category, year, location, description } = req.body;
     const file = req.file;
@@ -86,7 +86,39 @@ const uploadPhoto = async (req, res, next) => {
     console.error("Server error:", error);
     res.status(500).json({ error: error.message });
   }
-  next();
+ 
 };
 
-module.exports = { getMe, getAllUsers, uploadPhoto };
+const getPhotosByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    // Use lean() for better performance and select only needed fields
+    const photos = await Photo.find({ category })
+      .select("title year location description imageUrl")
+      .lean();
+
+    if (photos.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid category",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      category,
+      photos,
+    });
+  } catch (error) {
+    console.error("Error fetching photos by category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch photos",
+      error: error.message
+    });
+  }
+ 
+};
+
+module.exports = { getMe, getAllUsers, uploadPhoto, getPhotosByCategory };
