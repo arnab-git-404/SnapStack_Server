@@ -14,13 +14,12 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // Trust proxy - important for rate limiting behind reverse proxy (nginx, load balancer)
 app.set("trust proxy", 1);
-
-// Body parsing
-app.use(express.json({ limit: "10mb" })); // Prevent large payload attacks
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 // Logging
 if (process.env.NODE_ENV !== "production") {
