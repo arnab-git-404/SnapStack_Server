@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require("multer");
 const router = express.Router();
 const { protect, admin } = require('../middleware/authMiddleware');
-const { getMe, getAllUsers, uploadPhoto } = require('../controllers/userController');
+const { getMe, getAllUsers, uploadPhoto, getPhotosByCategory  } = require('../controllers/userController');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,11 +18,10 @@ const upload = multer({
   },
 });
 
-
-
 router.get('/me', protect, getMe);
 router.get('/admin', protect, admin, getAllUsers); // admin-only list users
-router.post('/upload-photo', upload.single('photo'), uploadPhoto);
+router.post('/upload-photo', protect, upload.single('photo'), uploadPhoto);
+router.get("/photos/:category", protect, getPhotosByCategory);
 
 
 module.exports = router;
