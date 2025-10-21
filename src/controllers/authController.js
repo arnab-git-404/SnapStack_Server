@@ -23,6 +23,7 @@ const getRefreshCookieOptions = () => ({
 });
 
 const register = async (req, res) => {
+
   const { name, email, password } = req.body;
 
   const existing = await User.findOne({ email });
@@ -63,8 +64,8 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
 
+  const { email, password } = req.body;
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
@@ -110,6 +111,32 @@ const logout = async (req, res) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+const verifyToken = async (req, res) => {
+
+  const token = req.cookies.accessToken || req.cookies.refreshToken;
+  
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Access token not found",
+    });
+  }
+  try {
+    const { verifyToken } = require("../utils/generateToken");
+    const decoded = verifyToken(token, false);
+    res.status(200).json({
+      success: true,
+      message: "Token is valid",
+      userId: decoded.userId || decoded.id,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid access token",
+    });
+  }
 };
 
 const refreshAccessToken = async (req, res) => {
@@ -171,6 +198,7 @@ module.exports = {
   register,
   login,
   logout,
+  verifyToken,
   refreshAccessToken,
   authValidation,
 };
