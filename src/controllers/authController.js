@@ -27,6 +27,13 @@ const getRefreshCookieOptions = () => ({
   path: '/'
 });
 
+const getClearCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  path: '/'
+});
+
 const register = async (req, res) => {
 
   const { name, email, password } = req.body;
@@ -109,10 +116,10 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken", getClearCookieOptions());
+  res.clearCookie("refreshToken", getClearCookieOptions());
 
-  res.json({
+  res.status(200).json({
     success: true,
     message: "Logged out successfully",
   });
