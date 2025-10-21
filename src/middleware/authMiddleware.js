@@ -2,18 +2,11 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const protect = async (req, res, next) => {
+
   try {
-    // Get token
-    const authHeader = req.headers.authorization;
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-    }
-
-    // Check cookies
-    else if (req.cookies && req.cookies.accessToken) {
-      token = req.cookies.accessToken;
-    }
+   // Check for token in cookies
+    const token = req.cookies.accessToken || req.cookies.refreshToken;
 
     if (!token) {
       return res.status(401).json({
@@ -56,7 +49,7 @@ const admin = (req, res, next) => {
     });
   }
 
-  next();
+ next();
 };
 
 module.exports = { protect, admin };
