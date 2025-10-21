@@ -2,12 +2,6 @@ const mongoose = require("mongoose");
 
 const PhotoSchema = new mongoose.Schema(
   {
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
     title: {
       type: String,
       required: true,
@@ -16,7 +10,6 @@ const PhotoSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-
       // Example categories Change as needed
       enum: ["arnab", "deblina", "together"],
       required: true,
@@ -52,8 +45,5 @@ const PhotoSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries
-PhotoSchema.index({ category: 1, year: -1 });
-PhotoSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("Photo", PhotoSchema);
