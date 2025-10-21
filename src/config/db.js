@@ -10,11 +10,12 @@ const connectDB = async () => {
 
     // Connection options (useNewUrlParser and useUnifiedTopology are deprecated since Mongoose 6)
     const options = {
-        // dbName: process.env.DB_NAME || 'myapp', 
+      
+      bufferCommands: false,  
       maxPoolSize: 10, // Maximum number of connections in the pool
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
       socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-      family: 4 // Use IPv4, skip trying IPv6
+      family: 4 
     };
 
     const conn = await mongoose.connect(uri, options);

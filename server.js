@@ -28,6 +28,7 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
+    
     console.log("Database connected successfully");
 
     // Start Express server directly
