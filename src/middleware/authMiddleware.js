@@ -6,7 +6,7 @@ const protect = async (req, res, next) => {
   try {
 
    // Check for token in cookies
-    const token = req.cookies.accessToken || req.cookies.refreshToken;
+    const token = req.cookies.accessToken;
 
     if (!token) {
       return res.status(401).json({
