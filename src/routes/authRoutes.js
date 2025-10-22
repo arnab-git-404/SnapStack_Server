@@ -6,7 +6,7 @@ const { register, login, logout, verifyToken, refreshAccessToken, authValidation
 router.post('/register', authValidation.register, validateRequest, register);
 router.post('/login', authValidation.login, validateRequest, login);
 router.post('/logout', logout); // If using cookies
-router.get('/validate', refreshAccessToken); // If using refresh tokens
+router.post('/validate', refreshAccessToken); // If using refresh tokens
 
 module.exports = router;
 
