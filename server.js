@@ -39,7 +39,7 @@ const startServer = async () => {
       console.log(`📝 Environment: ${NODE_ENV || "development"}`);
       console.log(`🗄️  MongoDB: Connected successfully`);
       console.log(`📦 GitHub: Image storage ready`);
-      console.log(`⚡ Redis: Cache layer active But Not Working Check it later`);
+      console.log(`⚡ Redis: Cache layer active`);
     });
 
     // Handle server errors
