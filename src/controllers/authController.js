@@ -1,7 +1,9 @@
 // authController.js
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { body } = require("express-validator");
 const User = require("../models/User");
+const sendEmail = require("../utils/sendEmail");
 const {
   generateToken,
   generateRefreshToken,
@@ -182,6 +184,157 @@ const refreshAccessToken = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    // Don't reveal the user exists or not for security
+    return res.status(200).json({
+      success: true,
+      message: "If that email exists, a password reset link has been sent.",
+    });
+  }
+
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Hash token and set to user
+  user.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set expire time (10 minutes)
+  user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+  await user.save({ validateBeforeSave: false });
+
+  // Create reset URL
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+  // Email HTML template
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
+        .button { display: inline-block; padding: 12px 30px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Password Reset Request</h1>
+        </div>
+        <div class="content">
+          <p>Hi ${user.name},</p>
+          <p>You requested to reset your password. Click the button below to reset it:</p>
+          <a href="${resetUrl}" class="button">Reset Password</a>
+          <p>Or copy and paste this link in your browser:</p>
+          <p style="word-break: break-all; color: #4CAF50;">${resetUrl}</p>
+          <p><strong>This link will expire in 10 minutes.</strong></p>
+          <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} Photo Gallery. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password Reset Request - Photo Gallery",
+      html,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset email sent successfully.",
+    });
+  } catch (error) {
+    console.error("Email send error:", error);
+
+    // Clear reset token if email fails
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(500).json({
+      success: false,
+      message: "Email could not be sent. Please try again later.",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  // Hash the token from URL to compare with stored hash
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  // Find user with valid token and not expired
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired reset token.",
+    });
+  }
+
+  // Set new password
+  const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10);
+  user.password = await bcrypt.hash(password, saltRounds);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+
+  await user.save();
+
+  // Optionally send confirmation email
+  const confirmHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #4CAF50;">Password Reset Successful</h2>
+      <p>Hi ${user.name},</p>
+      <p>Your password has been successfully reset.</p>
+      <p>If you didn't make this change, please contact support immediately.</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password Reset Confirmation - Photo Gallery",
+      html: confirmHtml,
+    });
+  } catch (error) {
+    console.error("Confirmation email error:", error);
+    // Don't fail the request if confirmation email fails
+  }
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Password reset successful. You can now login with your new password.",
+  });
+};
+
 // Validation rules
 const authValidation = {
   register: [
@@ -204,6 +357,17 @@ const authValidation = {
       .normalizeEmail(),
     body("password").notEmpty().withMessage("Password is required"),
   ],
+  forgotPassword: [
+    body("email")
+      .isEmail()
+      .withMessage("Invalid email address")
+      .normalizeEmail(),
+  ],
+  resetPassword: [
+    body("password")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters"),
+  ],
 };
 
 module.exports = {
@@ -212,5 +376,7 @@ module.exports = {
   logout,
   verifyToken,
   refreshAccessToken,
+  forgotPassword,
+  resetPassword,
   authValidation,
 };
