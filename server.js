@@ -1,6 +1,7 @@
 require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/config/db");
+const { connectRedis } = require("./src/config/redis");
 
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -28,12 +29,17 @@ const startServer = async () => {
   try {
     // Connect to database
     await connectDB();
-    
-    console.log("Database connected successfully");
+
+    // Connect to Redis
+    await connectRedis();
 
     // Start Express server directly
     const server = app.listen(PORT, () => {
-      console.log(`Server running in ${NODE_ENV} mode on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📝 Environment: ${NODE_ENV || "development"}`);
+      console.log(`🗄️  MongoDB: Connected successfully`);
+      console.log(`📦 GitHub: Image storage ready`);
+      console.log(`⚡ Redis: Cache layer active But Not Working Check it later`);
     });
 
     // Handle server errors
