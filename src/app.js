@@ -1,13 +1,13 @@
-require("express-async-errors");
-const express = require("express");
-const helmet = require("helmet");
 const cors = require("cors");
+require("express-async-errors");
 const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const errorHandler = require("./middleware/errorHandler");
+const helmet = require("helmet");
+const express = require("express");
 const cookieParser = require('cookie-parser');
+const rateLimit = require("express-rate-limit");
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -23,7 +23,7 @@ app.set("trust proxy", 1);
 
 // Logging
 if (process.env.NODE_ENV !== "production") {
-  app.use(morgan("dev"));
+  app.use(morgan("dev")); // logs for development
 } else {
   app.use(morgan("combined")); // More detailed logs for production
 }
@@ -33,7 +33,7 @@ const corsOptions = {
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : "*",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true, // Allow cookies
-  optionsSuccessStatus: 200,
+  optionsSuccessStatus: 204,
 };
 app.use(cors(corsOptions));
 
@@ -79,7 +79,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
 app.get('/', (req, res) => {
-    res.json({ success: true, message: 'Photo Gallery API is running' });
+    res.json({ success: true, message: 'Photo Gallery Server is running' });
 });
 
 // 404 handler
@@ -90,7 +90,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handler (must be last)
 app.use(errorHandler);
 
 module.exports = app;
