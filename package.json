@@ -19,6 +19,7 @@
   "homepage": "https://github.com/arnab-git-404/photo_gallery_server#readme",
   "description": "",
   "dependencies": {
+    "@upstash/redis": "^1.35.6",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
