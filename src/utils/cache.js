@@ -165,7 +165,6 @@ const deleteCachePattern = async (pattern) => {
 };
 
 
-
 // Get cache stats
 // const getCacheStats = async () => {
 //   if (!isRedisAvailable()) {

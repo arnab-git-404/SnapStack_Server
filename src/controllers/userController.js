@@ -5,6 +5,7 @@ const {
   getCache,
   setCache,
   deleteCache,
+  flushCache,
   CACHE_TTL,
   CACHE_KEYS,
 } = require("../utils/cache");
@@ -162,7 +163,6 @@ const getPhotosByCategory = async (req, res) => {
       return res.status(200).json({
         success: true,
         category,
-        count: cachedPhotos.length,
         photos: cachedPhotos,
         source: "cache",
       });
@@ -173,7 +173,7 @@ const getPhotosByCategory = async (req, res) => {
      // ✅ Step 2: Fetch metadata from MongoDB
     // Use lean() for better performance and select only needed fields
     const photos = await Photo.find({ category })
-      .select("title year location description imageUrl, -_id")
+      .select("-_id title year location description imageUrl")
       .lean();
 
     if (photos.length === 0) {
@@ -202,4 +202,22 @@ const getPhotosByCategory = async (req, res) => {
   }
 };
 
-module.exports = { getMe, getAllUsers, uploadPhoto, getPhotosByCategory };
+const clearAllRedisCache = async (req, res) => {
+  try {
+    await flushCache();
+    
+    res.status(200).json({
+      success: true,
+      message: "Redis cache cleared successfully",
+    });
+  } catch (error) {
+    console.error("Error clearing Redis cache:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to clear Redis cache",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getMe, getAllUsers, uploadPhoto, getPhotosByCategory, clearAllRedisCache };
