@@ -389,7 +389,7 @@ Found a bug? [Open an issue](https://github.com/arnab-git-404/photo_gallery_serv
 
 ## 📞 Support
 
-For support, email your-email@example.com or open an issue on GitHub.
+For support, email mukherjeearnab988@gmail.com or open an issue on GitHub.
 
 ---
 
