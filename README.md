@@ -1,4 +1,4 @@
-# 📸 Photo Gallery Server
+# 📸 SnapStack Server
 
 A robust and scalable Node.js backend server for managing photo galleries with user authentication, Redis caching, and GitHub-based image storage.
 
