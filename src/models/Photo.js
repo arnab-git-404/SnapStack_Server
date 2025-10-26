@@ -11,7 +11,8 @@ const PhotoSchema = new mongoose.Schema(
     category: {
       type: String,
       // Example categories Change as needed
-      enum: ["arnab", "deblina", "together"],
+      // enum: ["arnab", "deblina", "together"],
+      type: String,
       required: true,
     },
     year: {
