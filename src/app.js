@@ -8,6 +8,7 @@ const rateLimit = require("express-rate-limit");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -77,7 +78,9 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
 
+// Root route
 app.get('/', (req, res) => {
     res.json({ success: true, message: 'Photo Gallery Server is running' });
 });

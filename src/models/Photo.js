@@ -36,7 +36,7 @@ const PhotoSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    uploadedBy: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },

@@ -38,7 +38,7 @@ const getClearCookieOptions = () => ({
 
 const register = async (req, res) => {
 
-  const { name, email, password } = req.body;
+  const { name, partnerName, email, password } = req.body;
 
   const existing = await User.findOne({ email });
 
@@ -54,6 +54,7 @@ const register = async (req, res) => {
 
   const user = await User.create({
     name,
+    partnerName,
     email,
     password: hashedPassword,
   });
@@ -71,7 +72,9 @@ const register = async (req, res) => {
     user: {
       id: user._id,
       name: user.name,
+      partnerName: user.partnerName,
       email: user.email,
+      isActivated: user.isActivated,
       role: user.role,
     },
   });
@@ -111,8 +114,10 @@ const login = async (req, res) => {
     user: {
       id: user._id,
       name: user.name,
+      partnerName: user.partnerName,
       email: user.email,
       role: user.role,
+      isActivated: user.isActivated,
     },
   });
 };
@@ -342,6 +347,9 @@ const authValidation = {
       .trim()
       .isLength({ min: 2 })
       .withMessage("Name must be at least 2 characters"),
+    body("partnerName")
+      .isLength({ min: 2 })
+      .withMessage("Partner name must be at least 2 characters"),
     body("email")
       .isEmail()
       .withMessage("Invalid email address")

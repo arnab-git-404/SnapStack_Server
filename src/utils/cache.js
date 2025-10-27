@@ -1,18 +1,40 @@
 const { getRedis, isRedisAvailable, isUpstashRedis } = require('../config/redis');
 
 const CACHE_TTL = {
-  PHOTOS_BY_CATEGORY: 3600, // 1 hour - metadata doesn't change often
+  PHOTOS_BY_CATEGORY: 3600, // 1 hour
   ALL_USERS: 1800, // 30 minutes
   USER_PROFILE: 900, // 15 minutes
+  USER_PHOTOS: 3600, // 1 hour
 };
 
+
 // Cache key generators
+// const CACHE_KEYS = {
+//   photosByCategory: (category) => `photos:category:${category}`,
+//   allCategories: () => 'photos:categories:all',
+//   allUsers: () => 'users:all',
+//   userProfile: (userId) => `user:profile:${userId}`,
+// };
+
+
+// Cache key generators - NOW USER-SPECIFIC
 const CACHE_KEYS = {
-  photosByCategory: (category) => `photos:category:${category}`,
-  allCategories: () => 'photos:categories:all',
+  // User-specific photo caches
+  photosByCategory: (userId, category) => `photos:user:${userId}:category:${category}`,
+  allUserPhotos: (userId) => `photos:user:${userId}:all`,
+  userCategories: (userId) => `photos:user:${userId}:categories`,
+  
+  // User management caches
   allUsers: () => 'users:all',
   userProfile: (userId) => `user:profile:${userId}`,
+  
+  // Pattern matchers for clearing user-specific caches
+  userPhotosPattern: (userId) => `photos:user:${userId}:*`,
+  allPhotosPattern: () => 'photos:*',
 };
+
+
+
 
 // Get data from cache
 const getCache = async (key) => {
@@ -211,6 +233,27 @@ const getCacheStats = async () => {
   }
 };
 
+// Clear all caches for a specific user
+const clearUserCache = async (userId) => {
+  if (!isRedisAvailable()) {
+    return false;
+  }
+
+  try {
+    const pattern = CACHE_KEYS.userPhotosPattern(userId);
+    await deleteCachePattern(pattern);
+    
+    // Also clear user profile cache
+    await deleteCache(CACHE_KEYS.userProfile(userId));
+    
+    console.log(`🗑️  Cleared all caches for user: ${userId}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Clear user cache error for user "${userId}":`, error.message);
+    return false;
+  }
+};
+
 // Clear all database Cache
 const flushCache = async () => {
   if (!isRedisAvailable()) {
@@ -236,5 +279,6 @@ module.exports = {
   deleteCache,
   deleteCachePattern,
   getCacheStats,
-  flushCache
+  flushCache,
+  clearUserCache,
 };

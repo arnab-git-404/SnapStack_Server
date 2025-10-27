@@ -5,6 +5,7 @@ const {
   getCache,
   setCache,
   deleteCache,
+  clearUserCache,
   flushCache,
   CACHE_TTL,
   CACHE_KEYS,
@@ -14,11 +15,48 @@ dotenv.config();
 
 // Get current user profile
 const getMe = async (req, res) => {
+  
+  try {
+    const userId = req.user._id;
+
+    const cacheKey = CACHE_KEYS.userProfile(userId);
+    const cached = await getCache(cacheKey)
+
+      if (cached) {
+      console.log(`📦 Cache hit for user profile: ${userId}`);
+      return res.json({
+        success: true,
+        user: cached,
+      });
+    }
+
+    // Fetch from database
+    const user = await User.findById(userId).select("-password");
+
+        if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+// Cache the result - user-specific
+    await setCache(cacheKey, user, CACHE_TTL.USER_PROFILE);
+    console.log(`💾 Cached user profile: ${userId}`);
+
   res.json({
     success: true,
     user: req.user,
   });
+} catch (error) {
+    console.error("Get me error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
 };
+
+}
 
 // Get all users (admin only)
 // const getAllUsers = async (req, res) => {
@@ -31,52 +69,20 @@ const getMe = async (req, res) => {
 //   });
 // };
 
-// Get all users (admin only) - with caching
-const getAllUsers = async (req, res) => {
-  try {
-    const cacheKey = CACHE_KEYS.allUsers();
-
-    // Try cache first
-    const cachedUsers = await getCache(cacheKey);
-    if (cachedUsers) {
-      return res.json({
-        success: true,
-        count: cachedUsers.length,
-        users: cachedUsers,
-        cached: true,
-      });
-    }
-
-    // Fetch from MongoDB
-    const users = await User.find().select("-password").lean();
-
-    // Cache for 30 minutes
-    await setCache(cacheKey, users, CACHE_TTL.ALL_USERS);
-
-    res.json({
-      success: true,
-      count: users.length,
-      users,
-      cached: false,
-    });
-  } catch (error) {
-    console.error("Get all users error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch users",
-      error: error.message,
-    });
-  }
-};
 
 const uploadPhoto = async (req, res) => {
   try {
-    const { title, category, year, location, description } = req.body;
+
+    const userId = req.user._id;
     const file = req.file;
 
     if (!file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
+
+
+    const { title, category, year, location, description } = req.body;
+
 
     // Convert to base64 for GitHub
     const base64Content = file.buffer.toString("base64");
@@ -120,14 +126,19 @@ const uploadPhoto = async (req, res) => {
       location,
       description,
       imageUrl,
+      userId: userId,
     });
 
     // Clearing Old cache for the specific category
-    const cacheKey = CACHE_KEYS.photosByCategory(category);
-    await deleteCache(cacheKey);
+    // const cacheKey = CACHE_KEYS.photosByCategory(category);
+    // await deleteCache(cacheKey);
 
     // Also clear all old categories if new Category is created
-    await deleteCache(CACHE_KEYS.allCategories());
+    // await deleteCache(CACHE_KEYS.allCategories());
+
+    await clearUserCache(userId); 
+    console.log(`🗑️  Cleared cache for user ${userId} after photo upload`);
+
 
     console.log(
       `✅ Photo uploaded - Image: GitHub, Metadata: MongoDB, Cache invalidated for: ${category}`
@@ -136,7 +147,7 @@ const uploadPhoto = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Photo uploaded successfully",
-      user: {
+      photo: {
         title: newPhoto.title,
         imageUrl: newPhoto.imageUrl,
       },
@@ -147,18 +158,88 @@ const uploadPhoto = async (req, res) => {
   }
 };
 
+// Get all photos for the authenticated user
+const getAllUserPhotos = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Try cache first
+    const cacheKey = CACHE_KEYS.allUserPhotos(userId);
+    const cached = await getCache(cacheKey);
+
+    if (cached) {
+      console.log(`📦 Cache hit for all photos of user: ${userId}`);
+      return res.json({
+        success: true,
+        photos: cached,
+        count: cached.length,
+        source: "cache",
+      });
+    }
+
+    // Fetch from database - only user's photos
+    const photos = await Photo.find({ userId: userId })
+      // .populate("uploadedBy", "name email")
+      // .sort({ createdAt: -1 });
+
+    // Cache the result
+    await setCache(cacheKey, photos, CACHE_TTL.USER_PHOTOS);
+    console.log(`💾 Cached all photos for user: ${userId}`);
+
+    res.json({
+      success: true,
+      photos,
+      count: photos.length,
+      source: "database",
+    });
+  } catch (error) {
+    console.error("Get all user photos error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch photos",
+    });
+  }
+};
+
+
+
+// Clear user-specific cache
+const clearCache = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Clear all caches for this user
+    await clearUserCache(userId);
+
+    res.json({
+      success: true,
+      message: `Cache cleared successfully for user ${userId}`,
+    });
+  } catch (error) {
+    console.error("Clear cache error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to clear cache",
+    });
+  }
+};
+
+
+
 // Get photos by category - with Redis caching
 const getPhotosByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    const cacheKey = CACHE_KEYS.photosByCategory(category);
+    const userId = req.user._id;
 
+    
     // ✅ Step 1: Try to get from Redis cache
+    const cacheKey = CACHE_KEYS.photosByCategory(userId, category);
     const cachedPhotos = await getCache(cacheKey);
 
     // If found in cache, return it. Reduce database load.
     if (cachedPhotos) {
-      console.log(`✅ Cache HIT for category: ${category}`);
+      console.log(`✅ Cache hit for user ${userId}, category: ${category}`);
 
       return res.status(200).json({
         success: true,
@@ -172,8 +253,10 @@ const getPhotosByCategory = async (req, res) => {
       
      // ✅ Step 2: Fetch metadata from MongoDB
     // Use lean() for better performance and select only needed fields
-    const photos = await Photo.find({ category })
+    const photos = await Photo.find({ category, userId: userId
+     })
       .select("-_id title year location description imageUrl")
+      // .sort({ createdAt: -1 })
       .lean();
 
     if (photos.length === 0) {
@@ -184,7 +267,7 @@ const getPhotosByCategory = async (req, res) => {
     }
     // ✅ Step 3: Store the result in Redis cache for future requests
     await setCache(cacheKey, photos, CACHE_TTL.PHOTOS_BY_CATEGORY);
-    console.log(`✅ Cached photos for category: ${category} in Redis`);
+    console.log(`✅ Cached photos for user ${userId}, category: ${category} in Redis`);
 
     res.status(200).json({
       success: true,
@@ -202,6 +285,9 @@ const getPhotosByCategory = async (req, res) => {
   }
 };
 
+
+
+// Clear ALL cache (admin only)
 const clearAllRedisCache = async (req, res) => {
   try {
     await flushCache();
@@ -220,4 +306,4 @@ const clearAllRedisCache = async (req, res) => {
   }
 };
 
-module.exports = { getMe, getAllUsers, uploadPhoto, getPhotosByCategory, clearAllRedisCache };
+module.exports = { getMe, uploadPhoto, getAllUserPhotos ,getPhotosByCategory, clearAllRedisCache, clearCache };
