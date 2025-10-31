@@ -1,10 +1,15 @@
 require("dotenv").config();
+const http = require('http');
 const app = require("./src/app");
+const { Server } = require('socket.io');
 const connectDB = require("./src/config/db");
 const { connectRedis } = require("./src/config/redis");
+const { setupSocket } = require('./src/services/socketService');
+
 
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
+
 
 // Graceful shutdown handler
 const gracefulShutdown = (server) => {
@@ -33,13 +38,30 @@ const startServer = async () => {
     // Connect to Redis
     await connectRedis();
 
+    const server = http.createServer(app);
+
+    // Initialize Socket.IO on the same server
+    const io = new Server(server, {
+      cors: {
+        origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+        methods: ['GET', 'POST'],
+        credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization']
+      },
+      transports: ['websocket', 'polling']
+    });
+
+    setupSocket(io);
+
     // Start Express server directly
-    const server = app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Environment: ${NODE_ENV || "development"}`);
       console.log(`🗄️  MongoDB: Connected successfully`);
       console.log(`📦 GitHub: Image storage ready`);
       console.log(`⚡ Redis: Cache layer active`);
+      console.log(`🔗 Socket.IO enabled`);
+
     });
 
     // Handle server errors
