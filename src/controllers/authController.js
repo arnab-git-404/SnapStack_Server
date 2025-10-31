@@ -12,7 +12,6 @@ const {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-
 // Cookie options
 const getCookieOptions = () => ({
   httpOnly: true, // Prevents JavaScript access
@@ -727,8 +726,7 @@ const login = async (req, res) => {
     </body>
     </html>
     `
-
-
+    
   // Send login notification email (don't block the login)
   try {
     await sendEmail({
