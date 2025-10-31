@@ -9,7 +9,6 @@ const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const adminRoutes = require("./routes/adminRoutes");
-const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -80,7 +79,6 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
-app.use('/api/chat',  chatRoutes);
 
 // Root route
 app.get('/', (req, res) => {
