@@ -38,7 +38,7 @@ const getClearCookieOptions = () => ({
 
 const register = async (req, res) => {
 
-  const { name, partnerName, email, password } = req.body;
+  const { name, email, password } = req.body;
 
   const existing = await User.findOne({ email });
 
@@ -54,7 +54,6 @@ const register = async (req, res) => {
 
   const user = await User.create({
     name,
-    partnerName,
     email,
     password: hashedPassword,
   });
@@ -365,57 +364,12 @@ const register = async (req, res) => {
     user: {
       id: user._id,
       name: user.name,
-      partnerName: user.partnerName,
       email: user.email,
       isActivated: user.isActivated,
       role: user.role,
     },
   });
 };
-
-// const login = async (req, res) => {
-
-//   const { email, password } = req.body;
-//   const user = await User.findOne({ email }).select("+password");
-
-//   if (!user) {
-//     return res.status(404).json({
-//       success: false,
-//       message: "Invalid Email",
-//     });
-//   }
-
-//   const isMatch = await bcrypt.compare(password, user.password);
-
-//   if (!isMatch) {
-//     return res.status(401).json({
-//       success: false,
-//       message: "Invalid Password",
-//     });
-//   }
-
-//   // Generate tokens
-//   const accessToken = generateToken({ id: user._id });
-//   const refreshToken = generateRefreshToken({ id: user._id });
-
-//   // Set cookies
-//   res.cookie("accessToken", accessToken, getCookieOptions());
-//   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
-
-//   res.json({
-//     success: true,
-//     user: {
-//       id: user._id,
-//       name: user.name,
-//       partnerName: user.partnerName,
-//       email: user.email,
-//       role: user.role,
-//       isActivated: user.isActivated,
-//     },
-//   });
-// };
-
-// ...existing code...
 
 const login = async (req, res) => {
   const { email, password, timezone } = req.body;
@@ -1041,9 +995,6 @@ const authValidation = {
       .trim()
       .isLength({ min: 2 })
       .withMessage("Name must be at least 2 characters"),
-    body("partnerName")
-      .isLength({ min: 2 })
-      .withMessage("Partner name must be at least 2 characters"),
     body("email")
       .isEmail()
       .withMessage("Invalid email address")

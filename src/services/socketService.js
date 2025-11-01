@@ -3,7 +3,7 @@ const User = require("../models/User");
 const EncryptionKey = require("../models/EncryptionKey");
 const cookie = require("cookie");
 const Chat = require("../models/Chat");
-
+const Couple = require("../models/Couple");
 
 const setupSocket = (io) => {
   io.use(async (socket, next) => {
@@ -12,7 +12,7 @@ const setupSocket = (io) => {
 
       // Parse cookies from handshake headers
       const cookieHeader = socket.handshake.headers.cookie;
-      console.log("Cookie header:", cookieHeader);
+      // console.log("Cookie header:", cookieHeader);
 
       if (!cookieHeader) {
         console.error("❌ No cookie header found");
@@ -20,7 +20,7 @@ const setupSocket = (io) => {
       }
 
       const cookies = cookie.parse(cookieHeader);
-      console.log("Parsed cookies:", Object.keys(cookies));
+      // console.log("Parsed cookies:", Object.keys(cookies));
 
       const token = cookies.accessToken;
 
